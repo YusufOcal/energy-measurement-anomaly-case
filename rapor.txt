@@ -1,0 +1,70 @@
+
+YEDAS ELEKTRIK OLCUM VERILERI - VERI ANALIZI RAPORU
+====================================================
+
+1. VERI SETI GENEL BAKIS
+   - 353,949 satir, 18 kolon
+   - 74 tekil abone (tesisat)
+   - 5 il: Corum (%57), Samsun (%20.3), Amasya (%9.9), Sinop (%8.3), Ordu (%4.5)
+   - 2 gerilim seviyesi: OG (%63.3, 40 abone), AG (%36.7, 34 abone)
+   - 2 marka: MAKEL (54 abone), LUNA (20 abone)
+   - 10 abone grubu (agirlikli: Tek Terimli Ticarethane)
+   - Tarih araligi: 2025-08-01 ~ 2025-10-01 (61 gun)
+
+2. VERI KALITESI
+   a) Eksik Veri:
+      - v1/v2/v3: %21.3 eksik (75,434 satir) -> LUNA LUN23.5010 modeli voltaj raporlamiyor
+      - ri/rc: %2.9 eksik (10,240 satir) -> LUN23-TF modeli reaktif enerji raporlamiyor
+      - Sistematik eksiklik, rastgele degil (sayac modeline bagli)
+   
+   b) Zaman Serisi Butunlugu:
+      - 61 abone 15 dakikalik periyotta (normal)
+      - 13 abone 1 saatlik periyotta (LUN23-TF + bazi LUNA modeller)
+      - 1 abone sadece 10 gunluk veri (343b9f8bd503)
+      - %5.81 abnormal zaman farki (cogunlugu 1 saatlik periyotlardan)
+      - Duplike tarih YOK, negatif zaman farki YOK
+   
+   c) Sayac Anomalileri:
+      - 5 LUN23-TF abonesinde %100 sifir voltaj
+      - 2 kayitta sifir tuketim ama aktif akim (olasi sayac donmasi)
+      - Negatif delta_t0 YOK (sayac geri sarmiyor)
+
+3. TUKETIM ANALIZI
+   - 15dk periyodik ortalama tuketim: 6.69 kWh (medyan 1.08 kWh)
+   - Cok saga carpik dagilim: birkac buyuk tuketici ortalamayı yukseltiyor
+   - OG pik saat: 11:00 (14.35 kWh), AG pik saat: 16:00 (1.28 kWh)
+   - Hafta ici tuketim hafta sonundan %29 yuksek (ticari/sanayi profili)
+   - En buyuk tuketici: carpan=1260, gunluk ~8,548 kWh
+   - En kucuk tuketici: AG, gunluk ~2.5 kWh
+
+4. GERILIM VE AKIM
+   - Faz dengesizligi ortalama %85.8 (yuksek - cogu abone tek fazli)
+   - %18.8 kayitta hic yuk yok (tum fazlar <=0.1A)
+   - Voltaj: %77-85 normal aralikta (207-253V)
+   - v1 en problemli faz: %21.4 dusuk voltaj, %1.6 sifir
+   - Voltaj asimetrisi: medyan %0.48 (iyi), %20.1 kayitta >%2
+   - Reaktif enerji: %17.9 kayitta ri/t0 > 0.33 (cos_phi < 0.95 esigi)
+
+5. ANOMALI TESPITI
+   - IQR: %15.3 kayit ust siniria asmis (yuksek tuketim)
+   - Isolation Forest: %5 abone-gun anomali (cogunlugu buyuk tuketiciler)
+   - 3 abone surekli anomali: buyuk sanayi/ticari (carpan=1260, 1575, 3150)
+   - 1 AG abone (7c69a45825ae) %34 anomali - carpan=1 ile yuksek tuketim, incelenmeli
+
+6. ONERILER
+   a) Veri Temizligi:
+      - LUN23.5010 ve LUN23-TF modelleri icin eksik voltaj/reaktif verisi
+        sayac donanimi kaynakli -> imputation yerine ayri modelleme onerilir
+      - 1 saatlik periyotlu 13 aboneyi 15dk analizlerinden ayir
+      - v=0 kayitlari (5 abone) flagle veya cikar
+
+   b) Ileri Analiz:
+      - Enerji talep tahmini icin: abone bazli zaman serisi modelleme (ARIMA/Prophet)
+      - Faz dengesizligi yuksek aboneler icin dengeleme onerisi
+      - cos_phi < 0.95 aboneler icin reaktif enerji kompanzasyon analizi
+      - 7c69a45825ae abonesinin detayli yuk profili incelemesi
+
+   c) Veri Kalitesi Iyilestirme:
+      - LUNA sayaclarina voltaj/reaktif olcum firmware guncellemesi
+      - 1 saatlik periyotlu sayaclarin 15dk'ya ayarlanmasi
+      - Kisa sureli veri iceren abonenin (343b9f8bd503) durumu kontrol edilmeli
